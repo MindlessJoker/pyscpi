@@ -1,5 +1,5 @@
 
-
+import visa
 class SCPI_parameter(object):
     out_formatters = {
         str: '{0}'.format,
@@ -14,10 +14,13 @@ class SCPI_parameter(object):
         self.out_formatter = self.out_formatters[self.data_type] if out_formatter is None else out_formatter
         self.in_formatter = data_type if in_formatter is None else in_formatter
         self.read_only = read_only
+        self.cached = cached
     def __get__(self, obj, objtype=None):
         if obj is None:
             return self
-        data = obj.dev.query((self.param_string+'?'))
+        if not self.cached or self.param_string not in obj.param_cash:
+            obj.param_cash[self.param_string] = obj.dev.query((self.param_string + '?'))  # changes here
+        data = obj.param_cash[self.param_string]
         if len(self.units) and data.endswith(self.units):
             data = data[:-len(self.units)]
         return self.in_formatter(data)
@@ -29,11 +32,25 @@ class SCPI_parameter(object):
         if self.restricted_values and val not in self.restricted_values:
             raise Exception('Try to write {0} that have restricted value range {1} with value {2}'.format(self.param_string,self.restricted_values,val))
         obj.dev.write(self.param_string+' '+self.out_formatter(val)+self.units)
-
+        obj.param_cash[self.param_string] = +self.out_formatter(val)+self.units  # changes here
 class GeneratorBase:
     has_list_mode     = False
     has_fm_modulation = False
     idn = SCPI_parameter('*IDN',read_only=True)
+    open_resource_kwargs = {}
+    def __init__(self,visa_resource=None,host=None,port=None,**kwargs):
+        self.param_cash = dict()
+        rm = visa.ResourceManager()
+        if visa_resource is not None:
+            resource = visa_resource
+        elif host is not None:
+            if port is not None:
+                resource = 'TCPIP0::' + host + '::' + str(port) + '::SOCKET'
+            else:
+                resource = 'TCPIP0::' + host + '::inst0::INSTR'
+        else:
+            raise Exception('No VISA resource specified')
+        self.dev = rm.open_resource(resource, **self.open_resource_kwargs)
     def Power(self, powerf=None):
         if powerf != None:
             self.power=powerf

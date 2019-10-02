@@ -1,8 +1,7 @@
 from serial import Serial
 import time
 
-from Socket2Serial import Socket2Serial
-from Hardware.SCPI import SCPI_parameter,GeneratorBase
+from pyscpi.SCPI import SCPI_parameter,GeneratorBase
 import visa
 
 rm = visa.ResourceManager()
@@ -30,20 +29,10 @@ class Agilent_E4422B(GeneratorBase):
     has_fm_modulation = True
     output = False
     verbose = False
-    def log(self,*args):
-        if self.verbose:
-            print(args)
-
-    def __init__(self, comport=None, host=None, port=None):
+    open_resource_kwargs = dict(read_termination='\n')
+    def __init__(self, **kwargs):
         # priority to IP connection
-        if host is not None and port is not None:
-            dev = rm.open_resource('TCPIP0::' + host + '::' + str(port) + '::SOCKET', read_termination='\n')
-        elif comport is not None:
-            assert False
-            p = Serial(comport, baudrate=19200, timeout=10, rtscts=True, stopbits=2)
-        else:
-            raise Exception('No interface defined for DS345')
-        self.dev = dev
+        super(Agilent_E4422B,self).__init__(**kwargs)
         self.dev.timeout = 2000
     def FMext(self, depth):
         self.fm_source = 'EXT1'

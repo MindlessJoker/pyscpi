@@ -1,10 +1,10 @@
 import time
 import numpy as np
 import socket
-from Socket2Serial import Socket2Serial
+
 from serial import Serial
 
-from Hardware.SCPI import SCPI_parameter,GeneratorBase
+from pyscpi.SCPI import SCPI_parameter,GeneratorBase
 import visa
 
 
@@ -16,17 +16,9 @@ class SRS_DS345(GeneratorBase):
     output_en     = SCPI_parameter('ENBR', restrict_values=(0,1),data_type=int)  # On/Off
     has_list_mode = False
     has_fm_modulation = False
-    def __init__(self, comport=None,host=None,port=None):
-        #priority to IP connection
-        rm = visa.ResourceManager()
-        if host is not None and port is not None:
-            dev = rm.open_resource('TCPIP0::'+host+'::'+str(port)+'::SOCKET',read_termination='\r\n')
-        elif comport is not None:
-            assert False
-            p = Serial(comport,baudrate=19200,timeout=10, rtscts=True, stopbits=2)
-        else:
-            raise Exception('No interface defined for DS345')
-        self.dev = dev
+    open_resource_kwargs = dict(read_termination='\r\n')
+    def __init__(self, **kwargs):
+        super(SRS_DS345,self).__init__(**kwargs)
         self.dev.timeout=2000
     def FMext(self,val):
         if abs(val)>1e2:
@@ -48,10 +40,8 @@ class SRS_SG382(GeneratorBase):
     mod_en        = SCPI_parameter('MODL', data_type=int  , restrict_values=(0,1))  # modulation disabled/enable
     mod_func      = SCPI_parameter('MFNC', data_type=int  , restrict_values=(0,1,2,3,4,5)) # modulation function : Sine/Ramp/Triangle/Square/Noise/EXT
 
-    def __init__(self, ipadress='192.168.10.89'):
-        self.ip = ipadress
-        self.dev = self.rm.open_resource('TCPIP0::'+ipadress+'::inst0::INSTR')
-
+    def __init__(self,**kwargs):
+        super(SRS_SG382, self).__init__(**kwargs)
     def Temp(self):
         return self.temp
     def mod_rate_(self):

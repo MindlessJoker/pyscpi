@@ -6,7 +6,7 @@ class SCPI_parameter(object):
         float: '{0}'.format,
         int: '{0}'.format
     }
-    def __init__(self,string,restrict_values=None,data_type=str,out_formatter = None, in_formatter = None,read_only=False,cached=True,units=''):
+    def __init__(self,string,restrict_values=None,data_type=str,out_formatter = None, in_formatter = None,read_only=False,cached=True,units='',name_in_obj=None):
         self.units = units
         self.param_string = string
         self.restricted_values = restrict_values
@@ -15,15 +15,19 @@ class SCPI_parameter(object):
         self.in_formatter = data_type if in_formatter is None else in_formatter
         self.read_only = read_only
         self.cached = cached
+        self.name = name_in_obj or string
     def __get__(self, obj, objtype=None):
         if obj is None:
             return self
         if not self.cached or self.param_string not in obj.param_cash:
-            obj.param_cash[self.param_string] = obj.dev.query((self.param_string + '?'))  # changes here
-        data = obj.param_cash[self.param_string]
-        if len(self.units) and data.endswith(self.units):
-            data = data[:-len(self.units)]
-        return self.in_formatter(data)
+            data = obj.dev.query((self.param_string + '?'))  # changes here
+            if len(self.units) and data.endswith(self.units):
+                data = data[:-len(self.units)]
+            data =self.in_formatter(data)
+            obj.param_cash[self.name] = data
+        else:
+            data = obj.param_cash[self.name]
+        return data
     def __set__(self, obj, val):
         if self.read_only:
             raise Exception('Error when trying to write to {0} that is read only'.format(self.param_string))
@@ -32,12 +36,15 @@ class SCPI_parameter(object):
         if self.restricted_values and val not in self.restricted_values:
             raise Exception('Try to write {0} that have restricted value range {1} with value {2}'.format(self.param_string,self.restricted_values,val))
         obj.dev.write(self.param_string+' '+self.out_formatter(val)+self.units)
-        obj.param_cash[self.param_string] = +self.out_formatter(val)+self.units  # changes here
+        obj.param_cash[self.name] = val  # changes here
+    def __set_name__(self, owner, name):
+        self.name = name
 class GeneratorBase:
     has_list_mode     = False
     has_fm_modulation = False
     idn = SCPI_parameter('*IDN',read_only=True)
     open_resource_kwargs = {}
+    save_mandatory_fields = ['idn','frequency','power','output_en']
     def __init__(self,visa_resource=None,host=None,port=None,**kwargs):
         self.param_cash = dict()
         rm = visa.ResourceManager()
@@ -51,6 +58,7 @@ class GeneratorBase:
         else:
             raise Exception('No VISA resource specified')
         self.dev = rm.open_resource(resource, **self.open_resource_kwargs)
+        self.Off()
     def Power(self, powerf=None):
         if powerf != None:
             self.power=powerf
@@ -82,3 +90,10 @@ class GeneratorBase:
         else:
             self.Off()
         return
+    def to_dict(self):
+        out = {}
+        for f in self.save_mandatory_fields:
+            if f not in self.param_cash:
+                out[f] = getattr(self,f)
+        out.update(self.param_cash)
+        return out

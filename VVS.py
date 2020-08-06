@@ -58,10 +58,10 @@ class CurrentDAC_LTC2662_nano():
     verbose = False
     open_resource_kwargs = dict(read_termination='\n')
     save_mandatory_fields = ['idn', 'current0','range0','mode0',
-                                    'current1','range1','mode1'
-                                     'current2','range2','mode2'
-                                     'current3','range3','mode3'
-                                     'current4','range4','mode4']
+                                    'current1','range1','mode1',
+                                     'current2','range2','mode2',
+                                     'current3','range3','mode3',
+                                     'current4','range4','mode4',]
     def __init__(self,host=None, port=None,serial_no=None,baud_rate=115200):
         # priority to IP connection
         self.param_cash = dict()

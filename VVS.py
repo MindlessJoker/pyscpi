@@ -54,6 +54,20 @@ class CurrentDAC_LTC2662_nano():
     step_count4   = SCPI_parameter('SWEEP4:COUNT', data_type=float)
     prescale4     = SCPI_parameter('SWEEP4:PSC', data_type=float)
 
+    
+    altcurrent0      = SCPI_parameter('ALTCURrent0', data_type=float)
+    altcurrent1      = SCPI_parameter('ALTCURrent1', data_type=float)
+    altcurrent2      = SCPI_parameter('ALTCURrent2', data_type=float)
+    altcurrent3      = SCPI_parameter('ALTCURrent3', data_type=float)
+    altcurrent4      = SCPI_parameter('ALTCURrent4', data_type=float)
+    
+    toggle0        = SCPI_parameter('TOGGLE0', data_type=int)
+    toggle1        = SCPI_parameter('TOGGLE1', data_type=int)
+    toggle2        = SCPI_parameter('TOGGLE2', data_type=int)
+    toggle3        = SCPI_parameter('TOGGLE3', data_type=int)
+    toggle4        = SCPI_parameter('TOGGLE4', data_type=int)
+    
+    toggle_enable  = SCPI_parameter('TOGGLEENABLE', data_type=int)
     output = False
     verbose = False
     open_resource_kwargs = dict(read_termination='\n')
